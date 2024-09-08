@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐱Catpost</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/simplemde.min.css">
+    <script src="js/libs/showdown.min.js"></script>
+    <script src="js/libs/tonweb.js"></script>
+    <script src="js/libs/tonconnect-ui.min.js"></script>
+    <script src="js/libs/simplemde.min.js"></script>
+    <script src="js/libs/purify.min.js"></script>
+    <script src="js/index.js" defer></script>
+</head>
+<body>
+    <div class="popup" id="searchWindow">
+        <div>
+            <input id="search-input" type="text" placeholder="Search TON addresses">
+            <button onclick="closeSearch()">Close</button>
+        </div>
+    </div>
+    <div class="popup" id="imagePicker">
+        <div>
+            <h3>Upload an image</h3>
+            <p>It is best to upload files weighing up to 10 KB.</p>
+            <input type="file" name="" id="fileId" onchange="imageUploaded()">
+            <br><br>
+            <button class="mybutton" onclick="hideImagePicker()">Close</button>
+        </div>
+    </div>
+    <header>
+        <h1 id="logo">🐱Catpost <span>beta</span></h1>
+        <div id="header-menu">
+            <p id="searchbt">Search</p>
+            <p id="profilebt">My profile</p>
+        </div>
+    </header>
+    <main>
+        <noscript>
+            <p>Sorry, but you can't use Catpost app without JavaScript enabled.</p>
+        </noscript>
+        <div id="text-editor-window">
+            <textarea placeholder="What have you prepared for us today?" 
+                id="text" cols="30" rows="10"></textarea>
+            <br>
+            <div id="buttons">
+                <div id="ton-connect"></div>
+                <button class="mybutton" id="send">Send</button>
+            </div>
+            <div id="images"></div>
+        </div>
+        <div id="account-window">
+            <h3><a id="address" href=""></a></h3>
+            <div id="posts"></div>
+        </div>
+        <div id="post-window">
+            <h3 id="post-address"></h3>
+            <div class="post">
+                <p id="post-timestamp"></p>
+                <div class="post-html" id="post-html1"></div>
+            </div>
+            <br>
+            <textarea placeholder="Enter the comment" id="comment" cols="30" rows="3"></textarea>
+            <br>
+            <button class="mybutton" id="commentbt">Send</button>
+            <p id="counter"></p>
+            <p id="comment-wallet-warn"><a 
+            onclick="(async()=>{await tonConnectUI.openModal()})()"
+            >Connect wallet</a> to comment.</p>
+            <div id="answers"></div>
+        </div>
+    </main>
+</body>
+</html>
