@@ -4,7 +4,6 @@
 input {
     padding: 10px;
     border-radius: 10px;
-    width: 550px;
 }
 #imagePicker {
     display: none;
@@ -23,6 +22,7 @@ input {
     border: none;
     font-size: 20px;
     outline: none;
+    width: 550px;
 }
 #searchWindow div button {
     margin-top: 10px;
@@ -123,4 +123,28 @@ header h1 span {
 }
 textarea {
     resize: none;
+}
+@media screen and (max-device-width: 700px) {
+    header {
+        width: 100%;
+        padding-left: 10px;
+        white-space: nowrap;
+        box-sizing: border-box;
+    }
+    main {
+        width: 100%;
+        padding-left: 10px;
+        padding-right: 10px;
+        box-sizing: border-box;
+    }
+    #header-menu p {
+        min-width: 30px;
+    }
+    #searchWindow div {
+        width: 100%;
+    }
+    #searchWindow div input {
+        font-size: 20px;
+        width: 80%
+    }
 }
