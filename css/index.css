@@ -137,14 +137,20 @@ textarea {
         padding-right: 10px;
         box-sizing: border-box;
     }
-    #header-menu p {
-        min-width: 30px;
-    }
     #searchWindow div {
         width: 100%;
     }
     #searchWindow div input {
         font-size: 20px;
         width: 80%
+    }
+}
+@media screen and (max-device-width: 450px) {
+    #header-menu p {
+        min-width: 0px;
+        font-size: 15px;
+    }
+    header h1 {
+        font-size: 20px;
     }
 }
