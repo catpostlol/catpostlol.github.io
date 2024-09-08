@@ -342,7 +342,7 @@ document.getElementById("send").onclick = async function () {
     let transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 3600,
         messages: [{address: "UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ",
-                    amount: 0, payload: tonweb.utils.bytesToBase64(await cell.toBoc())}]
+                    amount: 1, payload: tonweb.utils.bytesToBase64(await cell.toBoc())}]
     }
     console.log(transaction)
     let result = await tonConnectUI.sendTransaction(transaction);
