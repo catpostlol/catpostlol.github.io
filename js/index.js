@@ -306,7 +306,7 @@ function imageUploaded() {
 }
 
 function writeStringTail(str, cell) {
-    let bytes = Math.floor(cell.bits.getFreeBits() / 8);
+    let bytes = Math.floor(cell.bits.getFreeBits() / 32);
     let remainingStr = str;
     let currentCell = cell;
 
