@@ -1,5 +1,5 @@
 const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-    manifestUrl: 'https://catpostlol.github.io/tonconnect-manifest.json',
+    manifestUrl: 'https://catpost.lol/tonconnect-manifest.json',
     buttonRootId: 'ton-connect'
 });
 const tonweb = new window.TonWeb();
@@ -9,7 +9,7 @@ const Address = tonweb.utils.Address;
 DOMPurify.addHook('afterSanitizeAttributes', (node) => {
     if (node.tagName === 'IMG' && node.hasAttribute('src')) {
         if (!node.src.startsWith("data:image/png;base64,")) {
-            node.setAttribute('src', "https:/imageproxy.catpost.lol/?image="+node.getAttribute('src'))
+            node.setAttribute('src', "https://imageproxy.catpost.lol/?image="+node.getAttribute('src'))
         }
     }
 });
