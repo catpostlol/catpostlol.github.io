@@ -6,7 +6,13 @@ const tonweb = new window.TonWeb();
 var converter = new showdown.Converter();
 const Address = tonweb.utils.Address;
 
-console.log(location.hash.replace("#", ""));
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.tagName === 'IMG' && node.hasAttribute('src')) {
+        if (!node.src.startsWith("data:image/png;base64,")) {
+            node.setAttribute('src', "https:/imageproxy.catpost.lol/?image="+node.getAttribute('src'))
+        }
+    }
+});
 
 let lhash = location.hash.replace("#", "")
 let limit = 999;
@@ -22,7 +28,6 @@ function renderPost(change_addr=true) {
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     let transactions = JSON.parse(xhr.response);
-                    console.log(address)
                     address = new Address(transactions.transactions[0].account)
                     document.getElementById("post-address").innerText = escapeString(address.toString(isUserFriendly=true));
                     document.getElementById("post-address").onclick = function () {
@@ -31,11 +36,8 @@ function renderPost(change_addr=true) {
                         document.getElementById("address").href = `https://tonscan.org/address/${escapeString(address.toString(isUserFriendly=true))}`;
                         renderAddress(address.toString())
                     }
-                    console.log(transactions)
-                    console.log(transactions.transactions[0].account)
                     let ts = escapeString(new Date(parseInt(transactions.transactions[0].out_msgs[0].created_at + "000")).toLocaleString())
                     document.getElementById("post-timestamp").textContent = ts;
-                    console.log(ts)
                     document.getElementById("post-html1").innerHTML = DOMPurify.sanitize(
                         converter.makeHtml(
                             escapeString(transactions.transactions[0].out_msgs[0].message_content.decoded.comment
@@ -58,7 +60,6 @@ function renderPost(change_addr=true) {
                         if (i.in_msg.source != "") {
                             if (i.in_msg.comment.startsWith("ctpst:a:"+lhash.replace("tx", "")+":") && 
                             i.in_msg.comment.replace(("ctpst:a:"+lhash.replace("tx", "")+":"), "").length <= 200) {
-                                console.log(i)
                                 let ts = escapeString(new Date(parseInt(i.utime + "000")).toLocaleString())
                                 let post = document.createElement('div');
                                 let posthtml = document.createElement('div');
@@ -85,7 +86,6 @@ function renderPost(change_addr=true) {
                         }
                     }
                 } else {
-                    console.log('Request failed with status: ' + xhr.status, null);
                 }
             };
             xhr2.send();
@@ -117,14 +117,12 @@ address=${address.toString(isUserFriendly=false)}&limit=${limit}&offset=0`, true
     xhr.onload = function() {
         if (xhr.status >= 200 && xhr.status < 300) {
             transactions = JSON.parse(xhr.response);
-            console.log(transactions)
             let posts_div = document.getElementById("posts")
             for (i of transactions) {
                 if (i.out_msgs.length) {
                     let ts = escapeString(new Date(parseInt(i.utime + "000")).toLocaleString())
                     for (j of i.out_msgs) {
                         if (j.comment && j.comment.startsWith("ctpst:p:")) {
-                            console.log(i)
                             let post = document.createElement('div');
                             let tmp = i.hash
                             post.onclick = function () {
@@ -150,7 +148,6 @@ address=${address.toString(isUserFriendly=false)}&limit=${limit}&offset=0`, true
                 }
             }
         } else {
-            console.log('Request failed with status: ' + xhr.status, null);
         }
     };
     xhr.send();
@@ -188,13 +185,8 @@ var simplemde = new SimpleMDE({
         let result = plainText;
         while (imgi < images.length) {
             result = result.replace(`(✨)`, "(data:image/png;base64,"+images[imgi].base64+")");
-            console.log(result)
             imgi++;
         }
-        console.log(
-            DOMPurify.sanitize(
-                converter.makeHtml(
-                    escapeString(result)), {ADD_TAGS: ['blockquote']}))
         return DOMPurify.sanitize(
             converter.makeHtml(
                 escapeString(result)), {ADD_TAGS: ['blockquote']});
@@ -271,9 +263,7 @@ function updateImgList() {
             let goal = this.id.replace("delete", "");
             images.splice(goal, 1);
             indices = findSubstringIndices(simplemde.value(), magicImgMdRegex);
-            console.log(indices)
             try {
-                console.log(cutSubstring(simplemde.value(), indices[goal].startIndex, indices[goal].length));
                 simplemde.value(cutSubstring(simplemde.value(), indices[goal].startIndex, indices[goal].length));
             } catch {}
             button.parentElement.remove();
@@ -292,7 +282,6 @@ function imageUploaded() {
         'input[type=file]')['files'][0];
 
     let reader = new FileReader();
-    console.log("next");
 
     reader.onload = function () {
         base64String = reader.result.replace("data:", "")
@@ -332,7 +321,6 @@ document.getElementById("send").onclick = async function () {
     let tmp = simplemde.value();
     while (imgi < images.length) {
         tmp = tmp.replace(`(✨)`, "(data:image/png;base64,"+images[imgi].base64+")");
-        console.log(tmp)
         imgi++;
     }
     let cell = new TonWeb.boc.Cell();
@@ -344,7 +332,6 @@ document.getElementById("send").onclick = async function () {
         messages: [{address: "UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ",
                     amount: 1, payload: tonweb.utils.bytesToBase64(await cell.toBoc())}]
     }
-    console.log(transaction)
     let result = await tonConnectUI.sendTransaction(transaction);
 }
 document.getElementById("commentbt").onclick = async function () {
@@ -358,9 +345,8 @@ document.getElementById("commentbt").onclick = async function () {
     let transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 3600,
         messages: [{address: address.toString(isUserFriendly=false),
-                    amount: 1, payload: tonweb.utils.bytesToBase64(await cell.toBoc())}]
+                    amount: 0, payload: tonweb.utils.bytesToBase64(await cell.toBoc())}]
     }
-    console.log(transaction)
     let result = await tonConnectUI.sendTransaction(transaction);
     document.getElementById("comment").value = "";
 }
