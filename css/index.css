@@ -99,12 +99,17 @@ body {
 }
 img {
     max-width: 400px;
+    width: 100%;
+    height: auto;
 }
 .post {
     border: 1px solid grey;
     padding: 20px;
     border-radius: 10px;
     margin-bottom: 10px;
+}
+.post p {
+    word-wrap: break-word;
 }
 #post-window {
     display: none;
