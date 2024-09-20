@@ -126,7 +126,8 @@ address=${address.toString(isUserFriendly=false)}&limit=${limit}&offset=0`, true
                             let post = document.createElement('div');
                             let tmp = i.hash
                             post.onclick = function () {
-                                location.hash="tx"+tmp.replace("+", "-");
+                                console.log("tx"+tmp.replaceAll("+", "-"))
+                                location.hash="tx"+tmp.replaceAll("+", "-");
                                 lhash = location.hash.replace("#", "");
                                 document.getElementById("account-window").style.display = 'none';
                                 document.getElementById("post-window").style.display = 'block';
@@ -142,7 +143,7 @@ address=${address.toString(isUserFriendly=false)}&limit=${limit}&offset=0`, true
                             timestamp.textContent = ts;
                             post.prepend(posthtml);
                             post.prepend(timestamp);
-                            posts_div.prepend(post);
+                            posts_div.append(post);
                         }
                     }
                 }
