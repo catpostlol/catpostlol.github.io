@@ -2,6 +2,7 @@ const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
     manifestUrl: 'https://catpost.lol/tonconnect-manifest.json',
     buttonRootId: 'ton-connect'
 });
+let localStorage1 = window.localStorage;
 const tonweb = new window.TonWeb();
 var converter = new showdown.Converter();
 const Address = tonweb.utils.Address;
@@ -17,36 +18,86 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
 let lhash = location.hash.replace("#", "")
 let limit = 999;
 let address;
-function renderPost(change_addr=true) {
+
+function render(transactions) {
+    address = new Address(transactions.account)
+    document.getElementById("post-address").innerText = escapeString(address.toString(isUserFriendly=true));
+    document.getElementById("post-address").onclick = function () {
+        location.hash = address.toString(isUserFriendly=true)
+        document.getElementById("address").innerText = escapeString(address.toString(isUserFriendly=true));
+        document.getElementById("address").href = `https://tonscan.org/address/${escapeString(address.toString(isUserFriendly=true))}`;
+        renderAddress(address.toString())
+    }
+    let ts = escapeString(new Date(parseInt(transactions.out_msgs[0].created_at + "000")).toLocaleString())
+    document.getElementById("post-timestamp").textContent = ts;
+    document.getElementById("post-html1").innerHTML = DOMPurify.sanitize(
+        converter.makeHtml(
+            escapeString(transactions.out_msgs[0].message_content.decoded.comment
+                .replace("ctpst:p:", ""))), {ADD_TAGS: ['blockquote']});
+    document.getElementById("post-window").style.display = 'block';
+}
+function renderComments (transactions2) {
+    document.getElementById("answers").innerHTML = '';
+    let posts_div = document.getElementById("answers")
+    for (i of transactions2) {
+        if (i.in_msg.source && i.in_msg.comment) {
+            if (i.in_msg.comment.startsWith("ctpst:a:"+decodeURIComponent(lhash.replace("tx", ""))+":") && 
+            i.in_msg.comment.replace(("ctpst:a:"+decodeURIComponent(lhash.replace("tx", "")+":")), "").length <= 200) {
+                let ts = escapeString(new Date(parseInt(i.utime + "000")).toLocaleString())
+                let post = document.createElement('div');
+                let posthtml = document.createElement('div');
+                posthtml.classList = ["post-html"];
+                post.classList = ["post"];
+                posthtml.innerHTML = DOMPurify.sanitize(
+                    escapeString(i.in_msg.comment.replace(("ctpst:a:"+decodeURIComponent(lhash.replace("tx", ""))+":"), ""))),
+                    {ADD_TAGS: ['blockquote']};
+                let timestamp = document.createElement("p");
+                timestamp.textContent = ts;
+                let author = document.createElement("p");
+                author.textContent = escapeString(i.in_msg.source);
+                author.onclick = function () {
+                    location.hash = this.innerText;
+                    document.getElementById("address").innerText = escapeString(this.innerText);
+                    document.getElementById("address").href = `https://tonscan.org/address/${escapeString(this.innerText)}`;
+                    renderAddress(this.innerText)
+                }
+                post.prepend(posthtml);
+                post.prepend(timestamp);
+                post.prepend(author);
+                posts_div.prepend(post);
+            }
+        }
+    }
+}
+
+function renderPost() {
     if (lhash) {
         if (lhash.startsWith("tx")) {
-            document.getElementById("answers").innerHTML = '';
+            let local = localStorage1.getItem(lhash.replace("tx", ""));
+            if (local) {
+                try {
+                    render(JSON.parse(local));
+                } catch {}
+            }
             const xhr = new XMLHttpRequest();
             xhr.open('GET', 
-            `https://toncenter.com/api/v3/transactions?hash=${lhash.replace("tx", "")}&limit=1&offset=0`, false);
-            
+            `https://toncenter.com/api/v3/transactions?hash=${lhash.replace("tx", "")}&limit=1&offset=0`, true);
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     let transactions = JSON.parse(xhr.response);
-                    address = new Address(transactions.transactions[0].account)
-                    document.getElementById("post-address").innerText = escapeString(address.toString(isUserFriendly=true));
-                    document.getElementById("post-address").onclick = function () {
-                        location.hash = address.toString(isUserFriendly=true)
-                        document.getElementById("address").innerText = escapeString(address.toString(isUserFriendly=true));
-                        document.getElementById("address").href = `https://tonscan.org/address/${escapeString(address.toString(isUserFriendly=true))}`;
-                        renderAddress(address.toString())
+                    if (local != JSON.stringify(transactions.transactions[0])) {
+                        localStorage1.setItem(lhash.replace("tx", ""), JSON.stringify(transactions.transactions[0]));
+                        render(transactions.transactions[0]);
                     }
-                    let ts = escapeString(new Date(parseInt(transactions.transactions[0].out_msgs[0].created_at + "000")).toLocaleString())
-                    document.getElementById("post-timestamp").textContent = ts;
-                    document.getElementById("post-html1").innerHTML = DOMPurify.sanitize(
-                        converter.makeHtml(
-                            escapeString(transactions.transactions[0].out_msgs[0].message_content.decoded.comment
-                                .replace("ctpst:p:", ""))), {ADD_TAGS: ['blockquote']});
-                    document.getElementById("post-window").style.display = 'block';
-
                 }
             }
             xhr.send();
+            let local2 = localStorage1.getItem(address.toString(isUserFriendly=false))
+            if (local2) {
+                try {
+                    renderComments(JSON.parse(local2));
+                } catch {}
+            }
             const xhr2 = new XMLHttpRequest();
             xhr2.open('GET', 
             `https://toncenter.com/api/index/getTransactionsByAddress?address=${
@@ -55,40 +106,14 @@ function renderPost(change_addr=true) {
             xhr2.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     let transactions2 = JSON.parse(xhr2.response);
-                    let posts_div = document.getElementById("answers")
-                    for (i of transactions2) {
-                        if (i.in_msg.source != "") {
-                            if (i.in_msg.comment.startsWith("ctpst:a:"+lhash.replace("tx", "")+":") && 
-                            i.in_msg.comment.replace(("ctpst:a:"+lhash.replace("tx", "")+":"), "").length <= 200) {
-                                let ts = escapeString(new Date(parseInt(i.utime + "000")).toLocaleString())
-                                let post = document.createElement('div');
-                                let posthtml = document.createElement('div');
-                                posthtml.classList = ["post-html"];
-                                post.classList = ["post"];
-                                posthtml.innerHTML = DOMPurify.sanitize(
-                                    escapeString(i.in_msg.comment.replace(("ctpst:a:"+lhash.replace("tx", "")+":"), ""))),
-                                    {ADD_TAGS: ['blockquote']};
-                                let timestamp = document.createElement("p");
-                                timestamp.textContent = ts;
-                                let author = document.createElement("p");
-                                author.textContent = escapeString(i.in_msg.source);
-                                author.onclick = function () {
-                                    location.hash = this.innerText;
-                                    document.getElementById("address").innerText = escapeString(this.innerText);
-                                    document.getElementById("address").href = `https://tonscan.org/address/${escapeString(this.innerText)}`;
-                                    renderAddress(this.innerText)
-                                }
-                                post.prepend(posthtml);
-                                post.prepend(timestamp);
-                                post.prepend(author);
-                                posts_div.prepend(post);
-                            }
-                        }
+                    if (local2 != JSON.stringify(transactions2)) {
+                        localStorage1.setItem(address.toString(isUserFriendly=false),
+                            JSON.stringify(transactions2));
+                        renderComments(transactions2);
                     }
-                } else {
                 }
             };
-            xhr2.send();
+            setTimeout(xhr2.send(), 1000);
             
         } else {
             document.getElementById("address").innerText = escapeString(lhash);
@@ -100,55 +125,68 @@ function renderPost(change_addr=true) {
     }
 }
 renderPost()
+
+function magic3(transactions) {
+    document.getElementById("posts").innerHTML = "";
+    let posts_div = document.getElementById("posts")
+    for (i of transactions) {
+        if (i.out_msgs.length) {
+            let ts = escapeString(new Date(parseInt(i.utime + "000")).toLocaleString())
+            for (j of i.out_msgs) {
+                if (j.comment && j.comment.startsWith("ctpst:p:")) {
+                    let post = document.createElement('div');
+                    let tmp = i.hash
+                    post.onclick = function () {
+                        location.hash="tx"+encodeURIComponent(tmp);
+                        lhash = location.hash.replace("#", "");
+                        document.getElementById("account-window").style.display = 'none';
+                        document.getElementById("post-window").style.display = 'block';
+                        renderPost();
+                    }
+                    let posthtml = document.createElement('div');
+                    posthtml.classList = ["post-html"];
+                    post.classList = ["post"];
+                    posthtml.innerHTML = DOMPurify.sanitize(
+                        converter.makeHtml(
+                            escapeString(j.comment.replace("ctpst:p:", ""))), {ADD_TAGS: ['blockquote']});
+                    let timestamp = document.createElement("p");
+                    timestamp.textContent = ts;
+                    post.prepend(posthtml);
+                    post.prepend(timestamp);
+                    posts_div.append(post);
+                }
+            }
+        }
+    }
+}
+
 async function renderAddress(adr) {
     document.getElementById("text-editor-window").style.display = 'none';
     document.getElementById("post-window").style.display = 'none';
     document.getElementById("account-window").style.display = 'block';
-    document.getElementById("posts").innerHTML = "";
     let address = adr;
     if (!adr) {
         address = new Address(lhash)
     }
+    let local = localStorage1.getItem(address.toString(isUserFriendly=false))
+    if (local) {
+        try {
+            magic3(JSON.parse(local));
+        } catch {}
+    }
     const xhr = new XMLHttpRequest();
     xhr.open('GET', 
-    `https://toncenter.com/api/index/getTransactionsByAddress?
-address=${address.toString(isUserFriendly=false)}&limit=${limit}&offset=0`, true);
+    `https://toncenter.com/api/index/getTransactionsByAddress?address=${
+        address.toString(isUserFriendly=false)}&limit=${limit}&offset=0`, true);
     
     xhr.onload = function() {
         if (xhr.status >= 200 && xhr.status < 300) {
             transactions = JSON.parse(xhr.response);
-            let posts_div = document.getElementById("posts")
-            for (i of transactions) {
-                if (i.out_msgs.length) {
-                    let ts = escapeString(new Date(parseInt(i.utime + "000")).toLocaleString())
-                    for (j of i.out_msgs) {
-                        if (j.comment && j.comment.startsWith("ctpst:p:")) {
-                            let post = document.createElement('div');
-                            let tmp = i.hash
-                            post.onclick = function () {
-                                console.log("tx"+tmp.replaceAll("+", "-"))
-                                location.hash="tx"+tmp.replaceAll("+", "-");
-                                lhash = location.hash.replace("#", "");
-                                document.getElementById("account-window").style.display = 'none';
-                                document.getElementById("post-window").style.display = 'block';
-                                renderPost();
-                            }
-                            let posthtml = document.createElement('div');
-                            posthtml.classList = ["post-html"];
-                            post.classList = ["post"];
-                            posthtml.innerHTML = DOMPurify.sanitize(
-                                converter.makeHtml(
-                                    escapeString(j.comment.replace("ctpst:p:", ""))), {ADD_TAGS: ['blockquote']});
-                            let timestamp = document.createElement("p");
-                            timestamp.textContent = ts;
-                            post.prepend(posthtml);
-                            post.prepend(timestamp);
-                            posts_div.append(post);
-                        }
-                    }
-                }
+            if (local != JSON.stringify(transactions)) {
+                localStorage1.setItem(address.toString(isUserFriendly=false),
+                    JSON.stringify(transactions));
+                magic3(transactions);
             }
-        } else {
         }
     };
     xhr.send();
@@ -167,7 +205,6 @@ document.getElementById("logo").onclick = function () {
     document.getElementById("account-window").style.display = 'none';
     document.getElementById("text-editor-window").style.display = 'block';
 }
-let localStorage1 = window.localStorage;
 let images = [];
 if (localStorage1.getItem("images")) {
     images = JSON.parse(localStorage1.getItem("images"));
@@ -341,7 +378,7 @@ document.getElementById("commentbt").onclick = async function () {
     let tmp = document.getElementById("comment").value;
     let cell = new TonWeb.boc.Cell();
     cell.bits.writeUint(0, 32);
-    let str = "ctpst:a:"+lhash.replace("tx", "")+":"+tmp;
+    let str = "ctpst:a:"+decodeURIComponent(lhash.replace("tx", ""))+":"+tmp;
     cell = writeStringTail(str, cell);
     let transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 3600,
@@ -372,9 +409,7 @@ document.getElementById("search-input").addEventListener('input', function () {
         document.getElementById("search-input").value = "";
         closeSearch();
         renderAddress(address);
-    } catch (e){
-        console.error(e)
-    }
+    } catch {}
 })
 setInterval(() => {
     if (tonConnectUI.connected) {
